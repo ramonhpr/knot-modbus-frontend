@@ -1,5 +1,6 @@
 import DBus from 'dbus';
 import { promisify } from 'util';
+import _ from 'lodash';
 
 const DBUS_SERVICE_NAME = 'org.freedesktop.DBus';
 const DBUS_INTERFACE_NAME = 'org.freedesktop.DBus';
@@ -9,6 +10,7 @@ const OBJECT_MANAGER_INTERFACE_NAME = 'org.freedesktop.DBus.ObjectManager';
 const OBJECT_PATH = '/';
 
 const SERVICE_NAME = 'br.org.cesar.modbus';
+const SLAVE_INTERFACE_NAME = `${SERVICE_NAME}.Slave1`;
 
 class DbusServices {
   constructor(config) {
@@ -18,10 +20,22 @@ class DbusServices {
     this.getInterface = promisify(this.bus.getInterface.bind(this.bus));
   }
 
+  setKeysToLowerCase(obj) {
+    return _.mapKeys(obj, (v,k) => k.toLowerCase());
+  }
+
+  mapObjectsToSlaves(objects) {
+    return _.chain(objects)
+      .pickBy(object => _.has(object, SLAVE_INTERFACE_NAME))
+      .map(object => this.setKeysToLowerCase(object[SLAVE_INTERFACE_NAME]))
+      .value();
+  }
+
   async loadSlaves() {
     const iface = await this.getInterface(SERVICE_NAME, OBJECT_PATH, OBJECT_MANAGER_INTERFACE_NAME);
     const getManagedObjects = promisify(iface.GetManagedObjects.bind(iface));
-    return getManagedObjects();
+    const objects = await getManagedObjects();
+    return this.mapObjectsToSlaves(objects);
   }
 
   execute() {

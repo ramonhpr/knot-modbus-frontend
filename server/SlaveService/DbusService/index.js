@@ -12,6 +12,8 @@ const OBJECT_PATH = '/';
 const SERVICE_NAME = 'br.org.cesar.modbus';
 const SLAVE_INTERFACE_NAME = `${SERVICE_NAME}.Slave1`;
 
+const INVALID_ARGUMENTS = `${SERVICE_NAME}.InvalidArgs`;
+
 function setKeysToLowerCase(obj) {
   return _.mapKeys(obj, (v, k) => k.toLowerCase());
 }
@@ -31,6 +33,21 @@ function mapObjectsToIdPath(objects) {
     .value();
 }
 
+function parseDbusError(err) {
+  let code;
+  console.log('erro: ', err.message);
+  switch (err.dbusName) {
+    case INVALID_ARGUMENTS:
+      code = 404;
+      break;
+    default:
+      code = 500;
+      break;
+  }
+  dbusError.code = code;
+  return dbusError;
+}
+
 function mapInterfaceToSlave(iface) {
   return mapObjectsToSlaves([iface])[0];
 }
@@ -38,9 +55,12 @@ function mapInterfaceToSlave(iface) {
 class DbusServices {
   constructor(config) {
     process.env.DISPLAY = ':0';
-    process.env.DBUS_SYSTEM_BUS_ADDRESS = config.address;
+    if (config.address)
+      process.env.DBUS_SYSTEM_BUS_ADDRESS = config.address;
     this.bus = DBus.getBus('system');
     this.getInterface = promisify(this.bus.getInterface.bind(this.bus));
+    this.slaves = [];
+    this.idPathMap = {};
   }
 
   async loadSlaves() {
@@ -116,14 +136,14 @@ class DbusServices {
         this.startSlaveMonitoring()
           .catch((err) => {
             // TODO: parse dbus error
-            console.error(err);
-            throw err;
+            console.error(err.message);
+            throw parseDbusError(err);
           });
       })
       .catch((err) => {
         // TODO: parse dbus error
         console.error(err);
-        throw err;
+        throw parseDbusError(err);
       });
   }
 

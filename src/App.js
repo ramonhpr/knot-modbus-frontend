@@ -20,10 +20,10 @@ class App extends Component {
     slaveSrv.listSlaves()
       .then((slaves) => {
         this.setState({ renderCard: true });
-        this.setState({ slaves: slaves.data });
+        this.setState({ slaves });
       })
       .catch((err) => {
-        this.setState({ openSnack: true, messageSnack: err.response.data });
+        this.setState({ openSnack: true, messageSnack: err.message });
       });
   }
 

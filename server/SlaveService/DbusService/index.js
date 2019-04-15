@@ -48,6 +48,13 @@ function mapInterfaceToSlave(iface) {
   return mapObjectsToSlaves([iface])[0];
 }
 
+function mapInterfaceToSource(iface, slaveId) {
+  return _.chain([iface])
+    .pickBy(object => _.has(object, SOURCE_INTERFACE_NAME))
+    .map(object => setKeysToLowerCase(object[SOURCE_INTERFACE_NAME]))
+    .value();
+}
+
 function parseDbusError(err) {
   let code;
   switch (err.dbusName) {
@@ -108,6 +115,13 @@ class DbusServices {
     this.slaves = _.concat(this.slaves, slave);
   }
 
+  addSource(source, path) {
+    if (_.has(this.sources, source.address)) {
+      // TODO: Remove old source with same id
+    }
+    this.idSourcesMap[source.id] = path;
+  }
+
   async monitorSlaveProperties(slave, objPath) {
     const iface = await this.getInterface(SERVICE_NAME, objPath, PROPERTIES_INTERFACE_NAME);
     iface.on('PropertiesChanged', (changedInterface, properties) => {
@@ -137,6 +151,14 @@ class DbusServices {
         await this.monitorSlaveProperties(slave, objPath);
         if (this.addedCb) {
           this.addedCb(slave);
+        }
+      } else {
+        const slaveId = _.findKey(this.idPathMap, path => _.startsWith(objPath, path));
+        const source = mapInterfaceToSource(addedInterface, slaveId);
+        console.log('source:', source);
+        if (source) {
+          console.log('source added:', source);
+          this.addSource(source, objPath);
         }
       }
     });

@@ -23,6 +23,10 @@ class SlaveService {
     return this.service.get(id);
   }
 
+  async add(id, name, url) {
+    return this.service.add(id, name, url);
+  }
+
   listSources(id) {
     return this.service.listSources(id);
   }

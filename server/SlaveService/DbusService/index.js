@@ -14,6 +14,7 @@ const OBJECT_PATH = '/';
 const SERVICE_NAME = 'br.org.cesar.modbus';
 const SLAVE_INTERFACE_NAME = `${SERVICE_NAME}.Slave1`;
 const SOURCE_INTERFACE_NAME = `${SERVICE_NAME}.Source1`;
+const MANAGER_INTERFACE_NAME = `${SERVICE_NAME}.Manager1`;
 
 const INVALID_ARGUMENTS = `${SERVICE_NAME}.InvalidArgs`;
 
@@ -51,6 +52,12 @@ function mapInterfaceToSlave(iface) {
 
 function mapInterfaceToSource(iface) {
   return mapObjectsByIface([iface], SOURCE_INTERFACE_NAME)[0];
+}
+
+function throwDbusUnavailable() {
+  const err = new Error('DBus service is unavailable');
+  err.code = 503;
+  throw err;
 }
 
 function parseDbusError(err) {
@@ -241,9 +248,7 @@ class DbusServices {
 
   list() {
     if (!this.started) {
-      const err = new Error('DBus service is unavailable');
-      err.code = 503;
-      throw err;
+      throwDbusUnavailable();
     }
     return this.slaves;
   }
@@ -256,6 +261,26 @@ class DbusServices {
       throw error;
     }
     return slave;
+  }
+
+  async add(id, name, url) {
+    if (!this.started) {
+      throwDbusUnavailable();
+    }
+
+    if (this.slaves.some(slv => slv.id === id)) {
+      const err = new Error(`Slave ${id} already exists`);
+      err.code = 409;
+      throw err;
+    }
+    const slave = { Id: id, Name: name, URL: url };
+    try {
+      const iface = await this.getInterface(SERVICE_NAME, OBJECT_PATH, MANAGER_INTERFACE_NAME);
+      await iface.AddSlave(slave);
+    } catch (err) {
+      console.log(err);
+            throw parseDbusError(err);
+          }
   }
 
   listSources(id) {

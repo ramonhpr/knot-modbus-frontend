@@ -22,7 +22,7 @@ class ConnectionHandler {
     console.log(`Connected ${this.id}`);
   }
 
-  onMessage({ type, data }) {
+  async onMessage({ type, data }) {
     let frame;
     try {
       console.log(`Received message ${type} from ${this.id}`);
@@ -32,6 +32,9 @@ class ConnectionHandler {
           break;
         case 'getSlave':
           frame = this.buildFrame('slave', this.slaveService.get(Number(data.id)));
+          break;
+        case 'addSlave':
+          await this.slaveService.add(Number(data.id), data.name, data.url);
           break;
         case 'listSources':
           frame = this.buildFrame('sources', this.slaveService.listSources(Number(data.id)));

@@ -27,6 +27,10 @@ class SlaveService {
     return this.service.add(id, name, url);
   }
 
+  async remove(id) {
+    return this.service.remove(id);
+  }
+
   listSources(id) {
     return this.service.listSources(id);
   }

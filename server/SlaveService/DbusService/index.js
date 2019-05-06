@@ -60,6 +60,12 @@ function throwDbusUnavailable() {
   throw err;
 }
 
+function throwSlaveNotFound(id) {
+  const err = new Error(`Not found slave ${id}`);
+  err.code = 404;
+  throw err;
+}
+
 function parseDbusError(err) {
   let code;
   const dbusError = new Error(err.message);
@@ -104,6 +110,7 @@ class DbusServices {
   removeSlave(path) {
     const id = Number(_.findKey(this.idPathMap, value => value === path));
     if (id) {
+      console.log('Slave removed:', id);
       delete this.idPathMap[id];
       _.remove(this.slaves, slave => slave.id === id);
       if (this.removedCb) {
@@ -256,9 +263,7 @@ class DbusServices {
   get(id) {
     const slave = _.find(this.slaves, { id });
     if (!slave) {
-      const error = new Error(`Not found slave ${id}`);
-      error.code = 404;
-      throw error;
+      throwSlaveNotFound(id);
     }
     return slave;
   }
@@ -281,6 +286,24 @@ class DbusServices {
       console.log(err);
             throw parseDbusError(err);
           }
+  }
+
+  async remove(id) {
+    if (!this.started) {
+      throwDbusUnavailable();
+    }
+
+    if (!this.slaves.some(slv => slv.id === id)) {
+      throwSlaveNotFound(id);
+    }
+    const path = this.idPathMap[id];
+    try {
+      const iface = await this.getInterface(SERVICE_NAME, OBJECT_PATH, MANAGER_INTERFACE_NAME);
+      await iface.RemoveSlave(path);
+    } catch (err) {
+      console.log(err);
+      throw parseDbusError(err);
+    }
   }
 
   listSources(id) {

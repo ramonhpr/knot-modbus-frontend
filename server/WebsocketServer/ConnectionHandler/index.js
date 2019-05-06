@@ -36,6 +36,9 @@ class ConnectionHandler {
         case 'addSlave':
           await this.slaveService.add(Number(data.id), data.name, data.url);
           break;
+        case 'rmSlave':
+          await this.slaveService.remove(Number(data.id));
+          break;
         case 'listSources':
           frame = this.buildFrame('sources', this.slaveService.listSources(Number(data.id)));
           break;

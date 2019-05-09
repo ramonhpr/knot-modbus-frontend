@@ -55,6 +55,7 @@ function mapInterfaceToSource(iface) {
 
 function parseDbusError(err) {
   let code;
+  const dbusError = new Error(err.message);
   switch (err.dbusName) {
     case INVALID_ARGUMENTS:
       code = 400;
@@ -63,8 +64,8 @@ function parseDbusError(err) {
       code = 500;
       break;
   }
-  err.code = code;
-  return err;
+  dbusError.code = code;
+  return dbusError;
 }
 
 class DbusServices {

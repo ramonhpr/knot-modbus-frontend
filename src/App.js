@@ -5,8 +5,11 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import Snackbar from '@material-ui/core/Snackbar';
+import Fab from '@material-ui/core/Fab';
+import AddIcon from '@material-ui/icons/Add';
 import SlaveService from './services/Slave';
 import SlaveCard from './components/SlaveCard';
+import SlaveDialog from './components/SlaveDialog';
 
 class App extends Component {
   constructor(props) {
@@ -16,6 +19,7 @@ class App extends Component {
       slaves: [],
       slaveSrv: new SlaveService(),
       openSnack: false,
+      openDialog: false,
       messageSnack: ''
     };
   }
@@ -76,6 +80,16 @@ class App extends Component {
     });
   }
 
+  async handleSaveDialog(slave) {
+    const { slaveSrv } = this.state;
+    try {
+      await slaveSrv.addSlave(slave);
+      this.setState({ openDialog: false });
+    } catch (error) {
+      this.setState({ openSnack: true, messageSnack: error.message });
+    }
+  }
+
   async renderSources(slaveId) {
     const { slaves, slaveSrv } = this.state;
     const slave = slaves.find(slv => slv.id === slaveId);
@@ -102,7 +116,9 @@ class App extends Component {
   }
 
   render() {
-    const { renderCard, openSnack, messageSnack } = this.state;
+    const {
+      renderCard, slaveSrv, openSnack, openDialog, messageSnack
+    } = this.state;
     return (
       <div className="App">
         <AppBar position="static">
@@ -124,6 +140,17 @@ class App extends Component {
         />
 
         { renderCard === true ? this.renderCardSlaves() : null }
+        { slaveSrv.isOpen && (
+        <Fab onClick={() => this.setState({ openDialog: true })} color="secondary" style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+          <AddIcon />
+        </Fab>
+        ) }
+        <SlaveDialog
+          open={openDialog}
+          error={openSnack}
+          onClose={() => this.setState({ openDialog: false })}
+          onSave={slave => this.handleSaveDialog(slave)}
+        />
       </div>
     );
   }

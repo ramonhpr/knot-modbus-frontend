@@ -49,6 +49,18 @@ class SlaveService extends EventEmitter {
     });
   }
 
+  async addSlave(slave) {
+    return new Promise((resolve, reject) => {
+      if (this.isOpen) {
+        this.socket.send(this.buildFrame('addSlave', slave));
+        this.once('slaveAdded', () => resolve());
+        this.once('error', err => reject(err));
+        return;
+      }
+      reject(new Error('Connection is no opened'));
+    });
+  }
+
   async listSources(id) {
     return new Promise((resolve, reject) => {
       if (this.isOpen) {
